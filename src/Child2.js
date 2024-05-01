@@ -20,13 +20,21 @@ class Child2 extends Component {
     var selectedCategory = this.props.selectedCategory; // the selected radio button
     var selectedTarget = this.props.selectedTarget; // the selected target from dropdown
   
-    var temp_data = d3
-    .rollups(
-      data,
-      (v) => d3.mean(v, (d) => parseFloat(d[selectedTarget])),
-      (d) => d[selectedCategory]
-    )
-    .map(([key, value]) => ({ key, value }));
+    if (!selectedCategory || !selectedTarget) {
+        return; // exit early if selectedCategory or selectedTarget is not set
+      }
+    
+      var temp_data = d3
+        .rollups(
+          data,
+          (v) => {
+            var mean = d3.mean(v, (d) => parseFloat(d[selectedTarget]));
+            return isNaN(mean) ? 0 : mean; // use 0 if mean is NaN
+          },
+          (d) => d[selectedCategory]
+        )
+        .map(([key, value]) => ({ key, value }));
+    
 
     var order;
     switch (selectedCategory) {
@@ -99,19 +107,21 @@ class Child2 extends Component {
       })
       .attr("fill", "lightgray");
     
-    container
+      container
       .selectAll(".bar-value")
       .data(temp_data)
       .join("text")
       .attr("class", "bar-value")
       .attr("x", function (d) {
-        return x_scale(d.key) + x_scale.bandwidth() / 2;
+        var x = x_scale(d.key) + x_scale.bandwidth() / 2;
+        return isNaN(x) ? 0 : x; // use 0 if x is NaN
       })
       .attr("y", function (d) {
-        return y_scale(d.value) + 15; // adjust this value to position the text correctly
+        var y = y_scale(d.value) + 15;
+        return isNaN(y) ? 0 : y; // use 0 if y is NaN
       })
       .text(function (d) {
-        return d.value.toFixed(2); // format the value to 2 decimal places
+        return isNaN(d.value) ? "" : d.value.toFixed(2); // use empty string if d.value is NaN
       })
       .attr("text-anchor", "middle")
       .attr("fill", "black"); // change the text color to black
